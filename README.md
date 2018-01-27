@@ -7,7 +7,7 @@ The data describe the change in flux (light intensity) of several thousand stars
 
 As you can imagine, planets themselves do not emit light, but the stars that they orbit do. If said star is watched over several months or years, there may be a regular 'dimming' of the flux (the light intensity). This is evidence that there may be an orbiting body around the star; such a star could be considered to be a 'candidate' system. Further study of our candidate system, for example by a satellite that captures light at a different wavelength, could solidify the belief that the candidate can in fact be 'confirmed'.
 
-
+![Flux Diagram](https://user-images.githubusercontent.com/1076706/35468688-6e7b00d8-02d8-11e8-9a04-e20c12a0900b.png)
 
 In the above diagram, a star is orbited by a blue planet. At t = 1, the starlight intensity drops because it is partially obscured by the planet, given our position. The starlight rises back to its original value at t = 2. The graph in each box shows the measured flux (light intensity) at each time interval.
 
