@@ -1,5 +1,9 @@
 # Exoplanet hunting with deep learning
 
+run `python exoplanet.py`
+
+----------
+
 ***The Search for New Earths***
 -------------------------
 
