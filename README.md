@@ -1,6 +1,8 @@
 # Exoplanet hunting with deep learning
 
-run `python exoplanet.py`
+1. Download the train and dev sets from [here](https://www.kaggle.com/keplersmachines/kepler-labelled-time-series-data/downloads/kepler-labelled-time-series-data.zip)
+2. Create a directory called `datasets` in the same location as exoplanet.py and put both the exoTrain.csv  and exoTest.csv files in there.
+3. run `python exoplanet.py`
 
 ----------
 
