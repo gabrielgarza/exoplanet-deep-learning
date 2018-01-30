@@ -3,9 +3,12 @@ import numpy as np
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout
+from keras.layers.normalization import BatchNormalization
 from keras.utils.np_utils import to_categorical
 from keras import metrics
 from keras.callbacks import ModelCheckpoint
+
+from imblearn.over_sampling import SMOTE
 
 from pathlib import Path
 
@@ -19,8 +22,8 @@ import time
 
 np.random.seed(1)
 
-LOAD_MODEL = False # continue training previous weights or start fresh
-
+LOAD_MODEL = True # continue training previous weights or start fresh
+RENDER_PLOT = False # render loss and accuracy plots
 
 def X_Y_from_df(df):
     df = shuffle(df)
@@ -57,40 +60,26 @@ def augment_data(df):
 def build_network():
     # Model config
     learning_rate = 0.001
-    n_l1 = 32
-    n_l2 = 64
-    n_l3 = 256
-    n_l4 = 256
-    n_l5 = 64
-    n_l6 = 32
+
+    layers = [
+        { "units": 32, "input_dim": n_x, "activation": 'relu', "dropout": 0.2 },
+        { "units": 64, "input_dim": 32, "activation": 'relu', "dropout": 0.2 },
+        { "units": 256, "input_dim": 64, "activation": 'relu', "dropout": 0.2 },
+        { "units": 256, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
+        { "units": 256, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
+        { "units": 256, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
+        { "units": 64, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
+        { "units": 32, "input_dim": 64, "activation": 'relu', "dropout": 0.2 },
+    ]
+
     # Build model
     model = Sequential()
+    for layer in layers:
+        model.add(Dense(units=layer["units"], input_dim=layer["input_dim"]))
+        model.add(Activation(layer["activation"]))
+        model.add(Dropout(layer["dropout"]))
 
-    model.add(Dense(units=n_l1, input_dim=n_x))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-    model.add(Dense(units=n_l2, input_dim=n_l1))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-    model.add(Dense(units=n_l3, input_dim=n_l1))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-    model.add(Dense(units=n_l4, input_dim=n_l1))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-    model.add(Dense(units=n_l5, input_dim=n_l1))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-    model.add(Dense(units=n_l6, input_dim=n_l1))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.2))
-
-
+    # output layer
     model.add(Dense(units=n_y))
     model.add(Activation('sigmoid'))
 
@@ -144,17 +133,23 @@ if __name__ == "__main__":
     # Load weights
     # filepath="weights-{epoch:02d}-{val_acc:.2f}.hdf5"
     # load_path="keras_ckpts/weights-best.hdf5"
-    load_path="checkpoints/weights-recall-000-000.hdf5"
+    load_path="checkpoints/weights-recall-0.-0.0.hdf5"
     my_file = Path(load_path)
     if LOAD_MODEL and my_file.is_file():
         model.load_weights(load_path)
-        print("loaded saved weights")
+        print("------------")
+        print("Loaded saved weights")
+        print("------------")
+
+
+    sm = SMOTE(ratio = 1.0)
+    X_train_sm, Y_train_sm = sm.fit_sample(X_train, Y_train)
 
     # Train
     # checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     # callbacks_list = [checkpoint]
     print("Training...")
-    history = model.fit(X_train, Y_train, epochs=20, batch_size=32)
+    history = model.fit(X_train_sm, Y_train_sm, epochs=100, batch_size=32)
 
     # Metrics
     train_outputs = model.predict(X_train, batch_size=32)
@@ -200,22 +195,24 @@ if __name__ == "__main__":
 
     print("------------")
     print("------------")
-    # list all data in history
-    print(history.history.keys())
-    # summarize history for accuracy
-    plt.plot(history.history['acc'])
-    # plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
 
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    if RENDER_PLOT:
+        # list all data in history
+        print(history.history.keys())
+        # summarize history for accuracy
+        plt.plot(history.history['acc'])
+        # plt.plot(history.history['val_acc'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
+
+        # summarize history for loss
+        plt.plot(history.history['loss'])
+        # plt.plot(history.history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
