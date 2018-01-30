@@ -70,6 +70,7 @@ def build_network():
         { "units": 256, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
         { "units": 64, "input_dim": 256, "activation": 'relu', "dropout": 0.2 },
         { "units": 32, "input_dim": 64, "activation": 'relu', "dropout": 0.2 },
+        { "units": n_y, "input_dim": 32, "activation": 'sigmoid', "dropout": 0 },
     ]
 
     # Build model
@@ -77,11 +78,8 @@ def build_network():
     for layer in layers:
         model.add(Dense(units=layer["units"], input_dim=layer["input_dim"]))
         model.add(Activation(layer["activation"]))
-        model.add(Dropout(layer["dropout"]))
-
-    # output layer
-    model.add(Dense(units=n_y))
-    model.add(Activation('sigmoid'))
+        if layer["dropout"] > 0:
+            model.add(Dropout(layer["dropout"]))
 
     model.compile(loss=keras.losses.binary_crossentropy,
                   optimizer=keras.optimizers.Adam(lr=learning_rate),
