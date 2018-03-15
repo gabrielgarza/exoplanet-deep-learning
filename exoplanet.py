@@ -4,7 +4,6 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout
 from keras.layers.normalization import BatchNormalization
-from keras.utils.np_utils import to_categorical
 from keras import metrics
 from keras.callbacks import ModelCheckpoint
 
@@ -12,7 +11,6 @@ from imblearn.over_sampling import SMOTE
 
 from pathlib import Path
 
-from sklearn import cross_validation
 from sklearn.utils import shuffle
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
@@ -24,6 +22,8 @@ from sklearn.metrics import classification_report
 
 from  scipy import ndimage, fft
 from sklearn.preprocessing import normalize
+
+from preprocess_data import LightFluxProcessor
 
 np.random.seed(1)
 
@@ -37,30 +37,6 @@ def X_Y_from_df(df):
     Y_raw = np.array(df['LABEL']).reshape((len(df['LABEL']),1))
     Y = Y_raw == 2
     return X, Y
-
-# def augment_data(df):
-#     print("Shape before augmentation:",df.shape)
-#     # Get exoplanet positive examples
-#     label_2_indexes = df['LABEL'] == 2
-#     df_2 = df[label_2_indexes]
-#
-#     # Separate labels from feature
-#     df_2_labels = df_2['LABEL']
-#     df_2_X = df_2.drop(['LABEL'], axis=1)
-#
-#     # Reverse features
-#     X_columns = df_2_X.columns.tolist()
-#     X_columns_reversed = X_columns[::-1]
-#     df_2_X = df_2_X[X_columns_reversed]
-#
-#     # Concat labels with features
-#     df_2 = pd.concat([df_2_labels,df_2_X], axis=1)
-#
-#     # Add new augmented examples to original dataframe
-#     df = pd.concat([df,df_2])
-#
-#     print("Shape after augmentation:",df.shape)
-#     return df
 
 def build_network():
     # Model config
@@ -96,31 +72,19 @@ if __name__ == "__main__":
     df_train = pd.read_csv(train_dataset_path, encoding = "ISO-8859-1")
     df_dev = pd.read_csv(dev_dataset_path, encoding = "ISO-8859-1")
 
-
-    df_train_x = df_train.drop('LABEL', axis=1).apply(fourier_transform,axis=1)
-    df_dev_x = df_dev.drop('LABEL', axis=1).apply(fourier_transform,axis=1)
-
-    df_train_y = df_train.LABEL
-    df_dev_y = df_dev.LABEL
-
-    df_train_x = pd.DataFrame(normalize(df_train_x))
-    df_dev_x = pd.DataFrame(normalize(df_dev_x))
-
-    df_train_x = df_train_x.iloc[:,:(df_train_x.shape[1]//2)].values
-    df_dev_x = df_dev_x.iloc[:,:(df_dev_x.shape[1]//2)].values
-
-    df_train_x = ndimage.filters.gaussian_filter(df_train_x, sigma=10)
-    df_dev_x = ndimage.filters.gaussian_filter(df_dev_x, sigma=10)
-
-    df_train = pd.DataFrame(df_train_x).join(pd.DataFrame(df_train_y))
-    df_dev = pd.DataFrame(df_dev_x).join(pd.DataFrame(df_dev_y))
+    # Process dataset
+    LFP = LightFluxProcessor(
+        fourier=True,
+        normalize=True,
+        gaussian=True)
+    df_train, df_dev = LFP.process(df_train, df_dev)
 
     # Load X and Y
     X_train, Y_train = X_Y_from_df(df_train)
     X_dev, Y_dev = X_Y_from_df(df_dev)
 
     # Standardize X data
-    print("Normalizing data...")
+    print("Standardizing data...")
     std_scaler = StandardScaler()
     X_train = std_scaler.fit_transform(X_train)
     X_dev = std_scaler.transform(X_dev)
@@ -128,7 +92,6 @@ if __name__ == "__main__":
     # Print data set stats
     (num_examples, n_x) = X_train.shape # (n_x: input size, m : number of examples in the train set)
     n_y = Y_train.shape[1] # n_y : output size
-
     print("X_train.shape: ", X_train.shape)
     print("Y_train.shape: ", Y_train.shape)
     print("X_dev.shape: ", X_dev.shape)
@@ -178,7 +141,7 @@ if __name__ == "__main__":
     save_weights_path = "checkpoints_v2/weights-recall-{}-{}.hdf5".format(recall_train, recall_dev) # load_path
     model.save_weights(save_weights_path)
     save_path = "models_v2/model-recall-{}-{}.hdf5".format(recall_train, recall_dev) # load_path
-    model.save(save_path)
+    # model.save(save_path)
 
     print("train set error", 1.0 - accuracy_train)
     print("dev set error", 1.0 - accuracy_dev)
