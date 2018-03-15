@@ -1,8 +1,14 @@
 # Exoplanet hunting with deep learning
 
+Medium post: [https://medium.com/@gabogarza/exoplanet-hunting-with-machine-learning-and-kepler-data-recall-100-155e1ddeaa95](https://medium.com/@gabogarza/exoplanet-hunting-with-machine-learning-and-kepler-data-recall-100-155e1ddeaa95)
+Kaggle kernel: [https://www.kaggle.com/garzagabriel/exoplanet-hunting-recall-1-0-precision-0-55](https://www.kaggle.com/garzagabriel/exoplanet-hunting-recall-1-0-precision-0-55)
+
+# Running the code
+
 1. Download the train and dev sets from [here](https://www.kaggle.com/keplersmachines/kepler-labelled-time-series-data/downloads/kepler-labelled-time-series-data.zip)
 2. Create a directory called `datasets` in the same location as exoplanet.py and put both the exoTrain.csv  and exoTest.csv files in there.
-3. run `python exoplanet.py`
+3. run `python exoplanet.py` for the Neural Network model
+4. run `python exoplanet_svm.py` for the Support Vector Machines model
 
 ----------
 
