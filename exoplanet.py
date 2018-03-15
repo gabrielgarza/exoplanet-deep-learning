@@ -30,14 +30,6 @@ np.random.seed(1)
 LOAD_MODEL = True # continue training previous weights or start fresh
 RENDER_PLOT = False # render loss and accuracy plots
 
-def X_Y_from_df(df):
-    df = shuffle(df)
-    df_X = df.drop(['LABEL'], axis=1)
-    X = np.array(df_X)
-    Y_raw = np.array(df['LABEL']).reshape((len(df['LABEL']),1))
-    Y = Y_raw == 2
-    return X, Y
-
 def build_network():
     # Model config
     learning_rate = 0.001
@@ -60,10 +52,14 @@ def build_network():
                   metrics=['accuracy'])
     return model
 
-def fourier_transform(X):
-    spectrum = fft(X, n=X.size)
-    return np.abs(spectrum)
-
+def np_X_Y_from_df(df):
+    df = shuffle(df)
+    df_X = df.drop(['LABEL'], axis=1)
+    X = np.array(df_X)
+    Y_raw = np.array(df['LABEL']).reshape((len(df['LABEL']),1))
+    Y = Y_raw == 2
+    return X, Y
+    
 if __name__ == "__main__":
     train_dataset_path = "./datasets/exoTrain.csv"
     dev_dataset_path = "./datasets/exoTest.csv"
@@ -72,22 +68,27 @@ if __name__ == "__main__":
     df_train = pd.read_csv(train_dataset_path, encoding = "ISO-8859-1")
     df_dev = pd.read_csv(dev_dataset_path, encoding = "ISO-8859-1")
 
+    # Generate X and Y dataframe sets
+    df_train_x = df_train.drop('LABEL', axis=1)
+    df_dev_x = df_dev.drop('LABEL', axis=1)
+    df_train_y = df_train.LABEL
+    df_dev_y = df_dev.LABEL
+
     # Process dataset
     LFP = LightFluxProcessor(
         fourier=True,
         normalize=True,
-        gaussian=True)
-    df_train, df_dev = LFP.process(df_train, df_dev)
+        gaussian=True,
+        standardize=True)
+    df_train_x, df_dev_x = LFP.process(df_train_x, df_dev_x)
 
-    # Load X and Y
-    X_train, Y_train = X_Y_from_df(df_train)
-    X_dev, Y_dev = X_Y_from_df(df_dev)
+    # Rejoin X and Y
+    df_train_processed = pd.DataFrame(df_train_x).join(pd.DataFrame(df_train_y))
+    df_dev_processed = pd.DataFrame(df_dev_x).join(pd.DataFrame(df_dev_y))
 
-    # Standardize X data
-    print("Standardizing data...")
-    std_scaler = StandardScaler()
-    X_train = std_scaler.fit_transform(X_train)
-    X_dev = std_scaler.transform(X_dev)
+    # Load X and Y numpy arrays
+    X_train, Y_train = np_X_Y_from_df(df_train_processed)
+    X_dev, Y_dev = np_X_Y_from_df(df_dev_processed)
 
     # Print data set stats
     (num_examples, n_x) = X_train.shape # (n_x: input size, m : number of examples in the train set)
@@ -115,6 +116,8 @@ if __name__ == "__main__":
 
     sm = SMOTE(ratio = 1.0)
     X_train_sm, Y_train_sm = sm.fit_sample(X_train, Y_train)
+    # X_train_sm, Y_train_sm = X_train, Y_train
+
 
     # Train
     # checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
